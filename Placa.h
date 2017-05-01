@@ -6,7 +6,7 @@
  */
 
 #include <string>
-#include <temperatura.h>
+#include "temperatura.h"
 
 #ifndef PLACA_H_
 #define PLACA_H_
@@ -15,7 +15,7 @@ class Placa {
 	bool _estadoResistor;
 	bool _estadoVentoinha;
 	bool _estadoLampada;
-	portaSerial _serial;
+	portaSerial* _serial;
 public:
 	Placa(int porta);
 	virtual ~Placa();

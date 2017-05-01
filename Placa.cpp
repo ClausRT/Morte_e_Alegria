@@ -6,7 +6,7 @@
  */
 
 #include <string>
-#include <temperatura.h>
+#include "temperatura.h"
 #include "Placa.h"
 
 /**
@@ -20,7 +20,7 @@ Placa::Placa(int porta) {
 	this->_estadoVentoinha = NULL;
 
 	this->_serial = new portaSerial();
-	_serial.abrir(porta);
+	_serial->abrir(porta);
 	this->resistor(false);
 	this->ventoinha(false);
 	this->lampada(false);
@@ -30,7 +30,7 @@ Placa::Placa(int porta) {
  * O destrutor da placa garante (na verdade ele tenta) que a comunicação serial seja encerrada corretamente
  */
 Placa::~Placa() {
-	this->_serial.fechar();
+	this->_serial->fechar();
 }
 
 /**
@@ -39,7 +39,7 @@ Placa::~Placa() {
  */
 bool Placa::resistor(bool acionamento) {
 	int envia = (acionamento ? 2 : 4);
-	string resposta = this->_serial.enviaSerial(envia);
+	string resposta = this->_serial->enviaSerial(envia);
 	if ((acionamento && resposta == "Resistor Ligado")
 			|| (!acionamento && resposta == "Resistor Desligado")) {
 		this->_estadoResistor = acionamento;
@@ -54,7 +54,7 @@ bool Placa::resistor(bool acionamento) {
  */
 bool Placa::ventoinha(bool acionamento) {
 	int envia = (acionamento ? 3 : 5);
-	string resposta = this->_serial.enviaSerial(envia);
+	string resposta = this->_serial->enviaSerial(envia);
 	if ((acionamento && resposta == "Ventoinha Ligado")
 			|| (!acionamento && resposta == "Ventoinha Desligado")) {
 		this->_estadoResistor = acionamento;
@@ -69,7 +69,7 @@ bool Placa::ventoinha(bool acionamento) {
  */
 bool Placa::lampada(bool acionamento) {
 	int envia = (acionamento ? 1 : 8);
-	string resposta = this->_serial.enviaSerial(envia);
+	string resposta = this->_serial->enviaSerial(envia);
 	if ((acionamento && resposta == "Lampada Ligado")
 			|| (!acionamento && resposta == "Lampada Desligado")) {
 		this->_estadoResistor = acionamento;
@@ -82,5 +82,5 @@ bool Placa::lampada(bool acionamento) {
  * Retorna a temperatura atualmente medida pela placa formatado em graus célcius com uma casa de presição.
  */
 string Placa::temperatura(void) {
-	return this->_serial.enviaSerial(0);
+	return this->_serial->enviaSerial(0);
 }
