@@ -14,15 +14,19 @@
 #include <ctime>
 #include <string>
 #include "Dado.h"
+#include <fstream>
 
 class Monitoramento {
 public:
 	Placa* placa;
 	ListaEncadeada<Dado>* leituras;
 	clock_t intervaloDeLeitura;
+	fstream disco;
 	Monitoramento(Placa* p, double i = 5);
 	virtual ~Monitoramento();
 	void iniciar(void);
+	void leitura(void);
+	void salvarEmDisco(void);
 };
 
 #endif /* MONITORAMENTO_H_ */

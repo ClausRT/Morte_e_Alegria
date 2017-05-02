@@ -22,5 +22,9 @@ public:
   bool delP(); // Apaga o primeiro elemento de uma lista
   bool delV(T y); // Apaga o elemento de valor y
   T pos(int pos); // Retorna a posição do elemento p;
+
+	int getTam() const {
+		return tam;
+	}
 };
 #endif // LISTAENCADEADA_H_
