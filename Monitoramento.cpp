@@ -32,7 +32,6 @@ To any_cast(From v)
 Monitoramento::Monitoramento(Placa* p, double i) {
 	this->placa = p;
 	this->intervaloDeLeitura = i;
-	this->leituras = new ListaEncadeada<Dado>();
 	disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);//Tenta abrir um arquivo com os dados coletados.
 	if (!disco.is_open()) {	//Se não conseguir, lança um erro no sistema
 		throw "Erro ao carregar os dados salvos em disco";
@@ -41,7 +40,7 @@ Monitoramento::Monitoramento(Placa* p, double i) {
 		disco.seekg(0, ios::beg);	//Põe o ponteiro de leitura no inicio do arquivo (por definição ele já estária, mas eu gosto de me precaver)
 		while(!disco.eof()) {	//Enquanto não achar o final do arquivo, procede com a leitura dos dados, seguido de salvar ele em memória
 			disco.read(buffer, sizeof(Dado));
-			leituras->insereF(*any_cast<Dado*>(buffer));	//Não faço ideia ainda como converter o buffer em um objeto válido
+			leituras.insereF(*any_cast<Dado*>(buffer));	//Não faço ideia ainda como converter o buffer em um objeto válido
 		}
 	}
 }
@@ -77,7 +76,7 @@ void Monitoramento::leitura() {
 	novoDado.resistor = placa->isEstadoResistor();
 	novoDado.ventoinha = placa->isEstadoVentoinha();
 	//novoDado.data = ;	//Salva a data atual
-	leituras->insereF(novoDado);
+	leituras.insereF(novoDado);
 }
 
 /**
@@ -93,9 +92,9 @@ void Monitoramento::salvarEmDisco() {
 
 	int dadosEmArquivo = (end - begin) / sizeof(Dado);	//Calcula quantos dados estão salvos no arquivo
 
-	if (dadosEmArquivo < leituras->getTam()) { //Se houver dados novos, eles serão salvos em disco. Como o ponteiro já se encontra no final do arquivo dá para escrever diretamente
-		for (int i = dadosEmArquivo; i < leituras->getTam(); i++) {
-			Dado temp = leituras->pos(i);
+	if (dadosEmArquivo < leituras.getTam()) { //Se houver dados novos, eles serão salvos em disco. Como o ponteiro já se encontra no final do arquivo dá para escrever diretamente
+		for (int i = dadosEmArquivo; i < leituras.getTam(); i++) {
+			Dado temp = leituras.pos(i);
 			disco.write(any_cast<char*>(&temp), sizeof(Dado));	//Não funciona pois eu ainda tenho que converter Dado para bytes
 		}
 	}

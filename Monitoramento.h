@@ -19,7 +19,7 @@
 class Monitoramento {
 public:
 	Placa* placa;
-	ListaEncadeada<Dado>* leituras;
+	ListaEncadeada<Dado> leituras;
 	clock_t intervaloDeLeitura;
 	fstream disco;
 	Monitoramento(Placa* p, double i = 5);

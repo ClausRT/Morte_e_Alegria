@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <windows.h>
-#include "serialport.h"
+#include "serialport.c"
 #include "temperatura.h"
 using namespace std;
 
