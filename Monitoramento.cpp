@@ -14,6 +14,16 @@
 #define NOMEDOARQ "leituras.bin"
 
 /**
+ * Tirado de http://stackoverflow.com/questions/5055636/casting-an-object-to-char-for-saving-loading
+ * A ideia é ter um typecast para usar nos buffers
+ */
+template<class To, class From>
+To any_cast(From v)
+{
+    return static_cast<To>(static_cast<void*>(v));
+}
+
+/**
  * Construtor
  * Precisa que uma Placa que será monitorada seja passada como um dos paramentros
  * Opcionalmente é possivel passar um intervalo entre as leituras sendo que o padrão é 5 unidades de tempo
@@ -31,7 +41,7 @@ Monitoramento::Monitoramento(Placa* p, double i) {
 		disco.seekg(0, ios::beg);	//Põe o ponteiro de leitura no inicio do arquivo (por definição ele já estária, mas eu gosto de me precaver)
 		while(!disco.eof()) {	//Enquanto não achar o final do arquivo, procede com a leitura dos dados, seguido de salvar ele em memória
 			disco.read(buffer, sizeof(Dado));
-			leituras->insereF(buffer);	//Não faço ideia ainda como converter o buffer em um objeto válido
+			leituras->insereF(*any_cast<Dado*>(buffer));	//Não faço ideia ainda como converter o buffer em um objeto válido
 		}
 	}
 }
@@ -62,7 +72,7 @@ void Monitoramento::iniciar() {
  * Realiza a leitura da placa e salva em memória
  */
 void Monitoramento::leitura() {
-	Dado novoDado = Dado();
+	Dado novoDado;
 	novoDado.temperatura = placa->temperatura();
 	novoDado.resistor = placa->isEstadoResistor();
 	novoDado.ventoinha = placa->isEstadoVentoinha();
@@ -85,7 +95,8 @@ void Monitoramento::salvarEmDisco() {
 
 	if (dadosEmArquivo < leituras->getTam()) { //Se houver dados novos, eles serão salvos em disco. Como o ponteiro já se encontra no final do arquivo dá para escrever diretamente
 		for (int i = dadosEmArquivo; i < leituras->getTam(); i++) {
-			disco.write(leituras->pos(i), sizeof(Dado));	//Não funciona pois eu ainda tenho que converter Dado para bytes
+			Dado temp = leituras->pos(i);
+			disco.write(any_cast<char*>(&temp), sizeof(Dado));	//Não funciona pois eu ainda tenho que converter Dado para bytes
 		}
 	}
 }
