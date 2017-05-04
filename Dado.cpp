@@ -6,22 +6,19 @@
  */
 
 #include "Dado.h"
+#include <ctime>
 
 Dado::Dado() {
 	//Só para o eclipse para de incomodar que eu não inicializei nada
 	this->ventoinha = false;
 	this->resistor = false;
-	//Era só isso que eu queria deixar aqui
-	this->apagar();
+	this->data = 0;
 }
 
 Dado::~Dado() {
 	// TODO Auto-generated destructor stub
 }
 
-void Dado::apagar() {
-	this->resistor = false;
-	this->ventoinha = false;
-	this->data = "";
-	this->temperatura = "";
+string Dado::dataFormatada() {
+	return ctime(&this->data);
 }

@@ -1,4 +1,6 @@
 #include "ListaEncadeada.h"
+#include "any_cast.cpp"
+
 template<typename T>
 ListaEncadeada<T>::ListaEncadeada() {
   cabeca = NULL; // Lista vazia
@@ -103,7 +105,10 @@ bool ListaEncadeada<T>::delV(T y) {
   return false;
 }
 
-
+/**
+ * Professor, alterei o método a baixo pois, como T será um objeto de uma classe Dado, ele não
+ * pode retornar -1 caso falhe na verificação de segurança.
+ */
 
 template<typename T>
 T ListaEncadeada<T>::pos(int pos) {
@@ -112,6 +117,7 @@ T ListaEncadeada<T>::pos(int pos) {
     for (int i = 0; i < pos; i++) // Avança até a posição que se queira
       onde = onde->prox; // Avança 1 posição
     return onde->valor; //Retorna o valor
-  } else
-    return -1;
+  } else {
+	  // TODO O que eu tentei não dei certo. Voltar aqui depois.
+  }
 }
