@@ -14,9 +14,19 @@
 #include "elemento.h"
 #include "Dado.h"
 #include <windows.h>
-
-#include "any_cast.c"
 #define NOMEDOARQ "leituras.bin"
+
+//#include "any_cast.h"	Essa biblioteca não existe mais. Ela não funcionava, por isso me vi obrigado a colar a função aqui.
+/**
+ * Perdi o link de onde tirei isso, mas era do stackoverflow
+ * É usado para transformar uma classe de qualquer tipo em outra.
+ * Eu a uso para a conversão de Dado para buffer e vice-versa quando trabalho com arquivos abertos no modo binario
+ */
+template<class To, class From>
+To any_cast(From v)
+{
+    return static_cast<To>(static_cast<void*>(v));
+}
 
 /**
  * Construtor
@@ -111,7 +121,7 @@ bool Monitoramento::estaLendoContinuamente(void) {
 void Monitoramento::lerContinuamente(bool acionar) {
 	if (acionar) {
 		if (this->leituraContinua == NULL) {
-			this->leituraContinua = new thread ([] () {
+			this->leituraContinua = new thread ([this] () {	//Thread iniciada com uma função labda
 				while (true) {
 					this->leitura();
 					Sleep((unsigned int)this->intervaloDeLeitura);	//Não sei se posso fazer isso
@@ -121,7 +131,7 @@ void Monitoramento::lerContinuamente(bool acionar) {
 
 		this->leituraContinua->join();
 	} else
-		this->leituraContinua->detach();
+		delete this->leituraContinua;	// TODO perguntar para o professor se isso é o mais correto
 }
 
 /**

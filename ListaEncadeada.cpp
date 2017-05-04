@@ -1,7 +1,5 @@
 #include "ListaEncadeada.h"
 
-#include "any_cast.c"
-
 template<typename T>
 ListaEncadeada<T>::ListaEncadeada() {
   cabeca = NULL; // Lista vazia
@@ -119,6 +117,6 @@ T ListaEncadeada<T>::pos(int pos) {
       onde = onde->prox; // Avança 1 posição
     return onde->valor; //Retorna o valor
   } else {
-	  // TODO O que eu tentei não dei certo. Voltar aqui depois.
+	  throw "Parametro pos inválido";
   }
 }
