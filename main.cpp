@@ -1,22 +1,19 @@
 #include <cstdio>
 #include <iostream>
-#include <string>
-#include <windows.h>
-#include "temperatura.h"
 #include "Placa.h"
-#include "ListaEncadeada.h"
-#include <ctime>
+#include "Monitoramento.h"
+#include <windows.h>
 
 int main(void)
 {
-/*//Exemplo de uso da biblioteca ctime
-	time_t now = time(0);
-	char* dt = ctime(&now);
-	tm *gmtm = gmtime(&now);
-	char* dt2 = asctime(gmtm);
+	Placa* kitPIC = new Placa(3);	//Comunicação serial na COM3
+	Monitoramento* monitor = new Monitoramento(kitPIC, 2); 	//2 segundos entre as leituras
 
-	cout << "The local date and time is: " << dt << endl;
-	cout << "The UTC date and time is: " << dt2 << endl;
-*/
+	monitor->lerContinuamente(true);
+	cout << "Iniciada a leitura da temperatura." << endl;
+	cout << "Leitura em andamento..." << endl;
+	Sleep(60 * 1000);	//Espera por um minuto - aproximadamente 30 leituras
+	monitor->lerContinuamente(false);
+	cout << "Leitura terminada." << endl;
     return 0;
 }

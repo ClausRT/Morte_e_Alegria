@@ -15,21 +15,21 @@
 #include <string>
 #include "Dado.h"
 #include <fstream>
+#include <thread>
 #define INTERVALO_PADRAO 5
 
 class Monitoramento {
-	bool lerContinuamente;
 	clock_t intervaloDeLeitura;
-	void leituraContinua(void);
-public:
+	thread* leituraContinua;
 	Placa* placa;
 	ListaEncadeada<Dado> leituras;
 	fstream disco;
+public:
 	Monitoramento(Placa* p, clock_t i = INTERVALO_PADRAO);
 	virtual ~Monitoramento();
 	void leitura(void);
-	void setLerContinuamente(bool estado);
-	bool getLerContinuamente(void);
+	void lerContinuamente(bool acionar);
+	bool estaLendoContinuamente(void);
 	void setIntervaloDeLeitura(clock_t segundos = INTERVALO_PADRAO);
 	void salvarEmDisco(void);
 	void limparRegistros(void);

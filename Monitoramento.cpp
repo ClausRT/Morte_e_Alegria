@@ -13,8 +13,9 @@
 #include "ListaEncadeada.cpp"
 #include "elemento.h"
 #include "Dado.h"
-#include "any_cast.cpp"
-//#define PRECISAO 0.01
+#include <windows.h>
+
+#include "any_cast.c"
 #define NOMEDOARQ "leituras.bin"
 
 /**
@@ -26,7 +27,7 @@
 Monitoramento::Monitoramento(Placa* p, clock_t i) {
 	this->placa = p;
 	this->intervaloDeLeitura = i;
-	this->lerContinuamente = false;
+	this->leituraContinua = NULL;
 	disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);//Tenta abrir um arquivo com os dados coletados.
 	if (!disco.is_open()) {	//Se não conseguir, lança um erro no sistema
 		throw "Erro ao carregar os dados salvos em disco";
@@ -48,20 +49,6 @@ Monitoramento::~Monitoramento() {
 	this->salvarEmDisco();
 	this->disco.close();
 }
-
-/**
- * Incompleto
- * Deve iniciar o monitoramento intervalado da placa. Aqui viria a analize de temperatura maxima, minime, ligar ventuinha e todo o resto
-
-void Monitoramento::iniciar() {
-	if (clock() != .1) {	//clock() mostra quanto tempo aproximado o programa está rodando. Ele retorna .1 se essa informação estiver indisponivel.
-		throw "Error: Tempo de execução da main indisponivel.";	//Joga um erro para o sistema
-	} else {
-		if ((clock() % this->intervaloDeLeitura) <= PRECISAO) { //Para saber quando um intervalo foi alcançado
-
-		}
-	}
-}*/
 
 /**
  * Realiza a leitura da placa e salva em memória
@@ -91,7 +78,7 @@ void Monitoramento::salvarEmDisco() {
 	if (dadosEmArquivo < leituras.getTam()) { //Se houver dados novos, eles serão salvos em disco. Como o ponteiro já se encontra no final do arquivo dá para escrever diretamente
 		for (int i = dadosEmArquivo; i < leituras.getTam(); i++) {//Não sei se essa lógica "pula" algum valor. Eu deveria começar em dadosEmArquivo -1 ou tesntar até <= leituras.getTam()????
 			Dado temp = leituras.pos(i);
-			disco.write(any_cast<char*>(&temp), sizeof(Dado));
+			disco.write(any_cast<char *>(&temp), sizeof(Dado));
 		}
 	}
 }
@@ -101,30 +88,40 @@ void Monitoramento::salvarEmDisco() {
  * Se o método for chamado sem parametros ele seta a propriedade para o seu valor default
  */
 void Monitoramento::setIntervaloDeLeitura(clock_t segundos) {
+	if (segundos < 0)
+		segundos *= -1;
 	this->intervaloDeLeitura = segundos;
 }
 
 /**
- * Método Set para a variavel lerContinuamente.
- * Ele também garante que sempre que se altere o estado da leitura a respectiva função que de fato faz a leitura seja chamada. Não sei até onde isso seria uma boa ideia.
+ * Método que avisa se o Monitoramento está lendo continuamente a temperatura.
+ * Retorna falso caso não, o que indica que outro método possa usar a porta serial.
  */
-void Monitoramento::setLerContinuamente(bool estado) {
-	this->lerContinuamente = estado;
-	this->leituraContinua();
-}
-
-bool Monitoramento::getLerContinuamente(void) {
-	return this->lerContinuamente;
+bool Monitoramento::estaLendoContinuamente(void) {
+	if (!this->leituraContinua) {
+		return this->leituraContinua->joinable();
+	} else
+		return false;
 }
 
 /**
- * Método privado cuja função é executar uma leitura continua da temperatura enquanto o
- * lerContinuamente for verdadeiro
+ * Método que inicializa e inicia uma thread que faz a leitura continua.
+ * A função pode ser chamada novamente para parar a thread/leitura. Importante pois só pode haver uma leitura de temperatura por vez.
  */
-void Monitoramento::leituraContinua(void) {
-	// TODO E se em vez disso ser uma função, isso ser uma thread
-	//e quando se altera o estado de leitura ele simplesmente
-	//inicia a thread ou a para, sendo que ela é criada no construtor da classe
+void Monitoramento::lerContinuamente(bool acionar) {
+	if (acionar) {
+		if (this->leituraContinua == NULL) {
+			this->leituraContinua = new thread ([] () {
+				while (true) {
+					this->leitura();
+					Sleep((unsigned int)this->intervaloDeLeitura);	//Não sei se posso fazer isso
+				}
+			});
+		}
+
+		this->leituraContinua->join();
+	} else
+		this->leituraContinua->detach();
 }
 
 /**
