@@ -35,9 +35,16 @@ To any_cast(From v)
  * É nesse instante que o arquivo em disco é criado/aberto. Se houver dados a serem lidos, eles serão salvos na lista encadeada de leituras
  */
 Monitoramento::Monitoramento(Placa* p, clock_t i) {
+	//Isso aqui é por que o eclipse estava me enchendo
 	this->placa = p;
 	this->intervaloDeLeitura = i;
 	this->leituraContinua = NULL;
+	this->temMax = NULL;
+	this->temMin = NULL;
+	this->haTemMax = false;
+	this->haTemMin = false;
+
+	//Abrindo arquivo salvo em disco
 	disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);//Tenta abrir um arquivo com os dados coletados.
 	if (!disco.is_open()) {	//Se não conseguir, lança um erro no sistema
 		throw "Erro ao carregar os dados salvos em disco";
@@ -69,6 +76,18 @@ void Monitoramento::leitura() {
 	novoDado.resistor = placa->isEstadoResistor();
 	novoDado.ventoinha = placa->isEstadoVentoinha();
 	novoDado.data = time(0);	//Salva a data atual em timestamp
+
+	//Teste dos limiares de temperatura
+	if (this->haTemMin && this->temMin <= stof(novoDado.temperatura)) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+		this->placa->resistor(true);
+		this->placa->ventoinha(false);
+	}
+	else if (this->haTemMax && this->temMax <= stof(novoDado.temperatura)) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+		this->placa->ventoinha(true);
+		this->placa->resistor(false);
+	}
+
+	//Salva o novo dado nos registros
 	leituras.insereF(novoDado);
 }
 
@@ -140,6 +159,64 @@ void Monitoramento::lerContinuamente(bool acionar) {
  */
 void Monitoramento::limparRegistros(void) {
 	this->disco.close();
-	this->disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);	// TODO falta isso no modo TRUNC
+	this->disco.open(NOMEDOARQ, ios::out | ios::trunc | ios::in | ios::binary);
 	while(this->leituras.delU());
+}
+
+/**
+ * Método sobrecarregado.
+ * Desativa o teste de temperatura máxima — o teste é feito durante a leitura
+ */
+void Monitoramento::setTemperaturaMaxima(void) {
+	this->haTemMax = false;
+}
+
+/**
+ * Método sobrecarregado.
+ * Ativa o teste de temperatura máxima com o valor da temperatura máxima — o teste é feito durante a leitura
+ */
+void Monitoramento::setTemperaturaMaxima(double tem) {
+	this->haTemMax = true;
+	this->temMax = tem;
+}
+
+/**
+ * Método sobrecarregado.
+ * Desativa o teste de temperatura mínima — o teste é feito durante a leitura
+ */
+void Monitoramento::setTemperaturaMinima(void) {
+	this->haTemMin = false;
+}
+
+/**
+ * Método sobrecarregado.
+ * Ativa o teste de temperatura minima com o valor da temperatura minima — o teste é feito durante a leitura
+ */
+void Monitoramento::setTemperaturaMinima(double tem) {
+	this->haTemMin = true;
+	this->temMin = tem;
+}
+
+/**
+ * Método para converter a data informada pelo usuario em timestamp
+ */
+time_t Monitoramento::converteParaData(string formatada) {
+// TODO fazer essa conversão corretamente
+
+	return 0;
+}
+
+/**
+ * Método que retorna quantas vezes uma dada temperatura ocorreu durante um periodo
+ * O periodo pode ser omitido para uma análise em todos os dados.
+ */
+int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, time_t dataFinal) {
+	//Dado temp = this->leituras.pos(0);
+	//time_t temp2 = this->leituras.pos(0);
+
+	time_t inicial = (dataInicial ? this->leituras.pos(0)->data : dataInicial),
+			 final = (dataFinal ? this->leituras.pos(this->leituras.getTam()-1) : dataFinal);
+	int cont = 0;
+
+	return 0; // temporari TODO remover
 }
