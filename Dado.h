@@ -20,7 +20,7 @@ public:
 	bool ventoinha;
 	bool resistor;
 	time_t data;
-	static string dataFormatada(void);	//Pesquisar o real comportamento de uma função estática
+	string dataFormatada(void);	//Pesquisar o real comportamento de uma função estática
 };
 
 #endif /* DADO_H_ */
