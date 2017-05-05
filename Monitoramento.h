@@ -41,8 +41,9 @@ public:
 	void setIntervaloDeLeitura(clock_t segundos = INTERVALO_PADRAO);
 	void salvarEmDisco(void);
 	void limparRegistros(void);
-	time_t converteParaData (string formatada);	// TODO Ainda não sei isso deve ser publico ou privado
-	int levantamentoDeOcorrencias (double tem, time_t dataInicial = NULL, time_t dataFinal = NULL);
+	time_t converteParaTimestamp(unsigned int day, unsigned int month, unsigned int year, unsigned int hour, unsigned int minute, unsigned int second);	// TODO Ainda não sei isso deve ser publico ou privado
+	int levantamentoDeOcorrencias (double tem, time_t dataInicial = 0, time_t dataFinal = 0);
+	ListaEncadeada<Dado> getLeituras (time_t dataInicial = 0, time_t dataFinal = 0);
 };
 
 #endif /* MONITORAMENTO_H_ */

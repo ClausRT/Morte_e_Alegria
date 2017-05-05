@@ -6,7 +6,7 @@ ListaEncadeada<T>::ListaEncadeada() {
   tam = 0;
 }
 
-template<typename T>
+template<class T>
 void ListaEncadeada<T>::insereF(T x){//Adiciona um elemento ao final da lista
   Elemento<T> *novo = new Elemento<T>(x); // Aloca espaço de memória
   tam++;

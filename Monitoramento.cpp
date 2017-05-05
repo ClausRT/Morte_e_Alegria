@@ -14,7 +14,10 @@
 #include "elemento.h"
 #include "Dado.h"
 #include <windows.h>
+#include <string>
 #define NOMEDOARQ "leituras.bin"
+
+using namespace std;
 
 //#include "any_cast.h"	Essa biblioteca não existe mais. Ela não funcionava, por isso me vi obrigado a colar a função aqui.
 /**
@@ -76,13 +79,14 @@ void Monitoramento::leitura() {
 	novoDado.resistor = placa->isEstadoResistor();
 	novoDado.ventoinha = placa->isEstadoVentoinha();
 	novoDado.data = time(0);	//Salva a data atual em timestamp
+	double temperatura = stod(novoDado.temperatura);
 
 	//Teste dos limiares de temperatura
-	if (this->haTemMin && this->temMin <= stof(novoDado.temperatura)) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+	if (this->haTemMin && this->temMin <= temperatura) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
 		this->placa->resistor(true);
 		this->placa->ventoinha(false);
 	}
-	else if (this->haTemMax && this->temMax <= stof(novoDado.temperatura)) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+	else if (this->haTemMax && this->temMax <= temperatura) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
 		this->placa->ventoinha(true);
 		this->placa->resistor(false);
 	}
@@ -199,11 +203,56 @@ void Monitoramento::setTemperaturaMinima(double tem) {
 
 /**
  * Método para converter a data informada pelo usuario em timestamp
+ * Não estou tão certo se isso deveria estar aqui ou em outra classe...
  */
-time_t Monitoramento::converteParaData(string formatada) {
-// TODO fazer essa conversão corretamente
+time_t Monitoramento::converteParaTimestamp(unsigned int day, unsigned int month, unsigned int year, unsigned int hour, unsigned int minute, unsigned int second) {
+	struct tm tmdate = {0};
+	tmdate.tm_year = year - 1900;
+	tmdate.tm_mon = month - 1;
+	tmdate.tm_mday = day;
+	tmdate.tm_hour = hour;
+	tmdate.tm_min = minute;
+	tmdate.tm_sec = second;
+	time_t t = mktime( &tmdate );
+	return t;
+}
 
-	return 0;
+/**
+ * Método utilizado sempre que se quer pegar alguma leitura da memória
+ * Como novos dados sempre são adicionado ao final da lista Leituras e está não é
+ * alterada em nenhum outro momento, é seguro pressumir que Leituras estará sempre
+ * ordenada da data mais antiga até a mais rescente
+ */
+ListaEncadeada<Dado> Monitoramento::getLeituras(time_t dataInicial, time_t dataFinal) {
+	Dado temp;
+	time_t inicial, final;
+	ListaEncadeada<Dado> resposta;
+
+	if (!dataInicial && !dataFinal)
+		return this->leituras;
+
+	if (dataInicial)
+		inicial = dataInicial;
+	else {
+		temp = this->leituras.pos(0);	//Retorna o primeiro elemento
+		inicial = temp.data;
+	}
+
+	if (dataFinal)
+		final = dataInicial;
+	else {
+		temp = this->leituras.pos(this->leituras.getTam()-1);	//Retorna o ultimo elemento
+		final = temp.data;
+	}
+
+	for (int i = 0; i < this->leituras.getTam(); i++) {
+		temp = this->leituras.pos(i);
+		if (temp.data >= inicial || temp.data <= final) {
+			resposta.insereF(temp);
+		}
+	}
+
+	return resposta;
 }
 
 /**
@@ -211,12 +260,15 @@ time_t Monitoramento::converteParaData(string formatada) {
  * O periodo pode ser omitido para uma análise em todos os dados.
  */
 int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, time_t dataFinal) {
-	//Dado temp = this->leituras.pos(0);
-	//time_t temp2 = this->leituras.pos(0);
-
-	time_t inicial = (dataInicial ? this->leituras.pos(0)->data : dataInicial),
-			 final = (dataFinal ? this->leituras.pos(this->leituras.getTam()-1) : dataFinal);
 	int cont = 0;
+	Dado dado;
+	ListaEncadeada<Dado> lista = getLeituras(dataInicial, dataFinal);
 
-	return 0; // temporari TODO remover
+	for (int i = 0; i < lista.getTam(); i++){
+		dado = lista.pos(i);
+		if (stod(dado.temperatura) == tem)
+			cont++;
+	}
+
+	return cont;
 }
