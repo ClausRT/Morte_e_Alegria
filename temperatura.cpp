@@ -24,7 +24,7 @@ string portaSerial::enviaSerial(int n){
 	itoa(n,sendbuffer,10);
 	int bytesWritten = writeToSerialPort(h,sendbuffer,strlen(sendbuffer));
 	int bytesRead = readFromSerialPort(h,readbuffer,99);
-	printf("%d",bytesRead);
+	//printf("%d",bytesRead);
 	readbuffer[bytesRead]=0;
 	return string(readbuffer);     
   }

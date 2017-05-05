@@ -46,6 +46,7 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
 	this->temMin = NULL;
 	this->haTemMax = false;
 	this->haTemMin = false;
+	this->lendoContinuamente = false;
 
 	//Abrindo arquivo salvo em disco
 	disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);//Tenta abrir um arquivo com os dados coletados.
@@ -114,6 +115,8 @@ void Monitoramento::salvarEmDisco() {
 			disco.write(any_cast<char *>(&temp), sizeof(Dado));
 		}
 	}
+
+	disco.seekg(0, ios::beg); 	//Garante que o ponteiro de leitura esteja no inicio de arquivo caso outra função faça uma leitura posteriormente
 }
 
 /**
@@ -145,16 +148,18 @@ void Monitoramento::lerContinuamente(bool acionar) {
 	if (acionar) {
 		if (this->leituraContinua == NULL) {
 			this->leituraContinua = new thread ([this] () {	//Thread iniciada com uma função labda
-				while (true) {
+				while (this->lendoContinuamente) {
 					this->leitura();
 					Sleep((unsigned int)this->intervaloDeLeitura);	//Não sei se posso fazer isso
 				}
 			});
 		}
 
-		this->leituraContinua->join();
-	} else
-		delete this->leituraContinua;	// TODO perguntar para o professor se isso é o mais correto
+		//this->leituraContinua->join();
+	} else {
+		//delete this->leituraContinua;	// TODO perguntar para o professor se isso é o mais correto
+	}
+	lendoContinuamente = acionar;
 }
 
 /**
@@ -271,4 +276,71 @@ int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, tim
 	}
 
 	return cont;
+}
+
+/**
+ * Método que retorna uma string (util para a UI) com as medidas estatisticas de temperatura de um dado periodo de tempo
+ *
+ * Professor Andre Geraldo, não deu para entender o que o senhor quis dizer com temperatura máxima e minima no enunciado a seguir:
+ * A temperatura máxima e mínima, media e mediana ocorrida em um
+ * período. Além da quantidade de temperatura acima da máxima, e
+ * abaixo da mínima.
+ * Não sabemos então se era para mostrar a temperatura máxima que ocorreu no periodo ou a máxima que o usuario setou no programa
+ * (a mesma duvida para temperatura minima). Então fizemos só metade do enunciado, ignorando a ultima sentennça.
+ */
+string Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
+	ListaEncadeada<Dado> lista = getLeituras(dataInicial, dataFinal);
+	Dado temp;
+	double *temperaturas = new double [lista.getTam()];
+	double cont = 0;
+
+	for (int i = 0; i < lista.getTam(); i++) {
+		temp = lista.pos(i);
+		temperaturas[i] = stod(temp.temperatura);
+		cont += temperaturas[i];
+	}
+
+	for (int i = 0; i < lista.getTam(); i++) {
+		for (int j = 0; j < lista.getTam(); j++) {
+			if (temperaturas[i] > temperaturas [j])
+				swap(temperaturas[i], temperaturas[j]);
+		}
+	}
+
+	cont /= lista.getTam();
+
+	string resposta;	//Quebrei a atribuição em três linhas por motivos de legibilidade do código
+	resposta << "Temperatura minima: " << temperaturas[0] << "C Temperatura maxima: ";
+	resposta << temperaturas[lista.getTam()] << "C Moda: " << cont << "C Mediana: ";
+	resposta << temperaturas[lista.getTam()/2] << "C";
+	return resposta;
+}
+
+void Monitoramento::datalog(int nLeituras, clock_t segundos, string nome) {
+	lerContinuamente(false);	//Desativa a leitura atual. A UI para de exibir a temperatura em tempo real
+	int inicial = leituras.getTam(), final = leituras.getTam() + nLeituras;
+
+	thread esperaLeituras([this] (int final) {
+		while(leituras.getTam() < final) {
+			Sleep(intervaloDeLeitura);
+		}
+	}, final);
+
+	//Trocando o intervalo de leitura
+	clock_t temp = this->intervaloDeLeitura;
+	this->intervaloDeLeitura = segundos;
+	esperaLeituras.join();
+	swap(temp, intervaloDeLeitura);
+
+	//Salvando em arquivo
+	fstream arquivo;
+	nome += ".log";
+	Dado lido;
+
+	arquivo.open(nome.c_str(), ios::out | ios::trunc | ios::app);
+	for (int i = inicial; i < final; i++) {
+		lido = this->leituras.pos(i);
+		arquivo << lido.dataFormatada() << "  " << lido.temperatura << "C" << endl;
+	}
+	arquivo.close();
 }

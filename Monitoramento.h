@@ -28,6 +28,7 @@ class Monitoramento {
 	bool haTemMin;
 	double temMax;
 	double temMin;
+	bool lendoContinuamente;
 public:
 	Monitoramento(Placa* p, clock_t i = INTERVALO_PADRAO);
 	virtual ~Monitoramento();
@@ -44,6 +45,8 @@ public:
 	time_t converteParaTimestamp(unsigned int day, unsigned int month, unsigned int year, unsigned int hour, unsigned int minute, unsigned int second);	// TODO Ainda não sei isso deve ser publico ou privado
 	int levantamentoDeOcorrencias (double tem, time_t dataInicial = 0, time_t dataFinal = 0);
 	ListaEncadeada<Dado> getLeituras (time_t dataInicial = 0, time_t dataFinal = 0);
+	string analise (time_t dataInicial = 0, time_t dataFinal = 0);
+	void datalog(int nLeituras, clock_t segundos = INTERVALO_PADRAO, string nome = "datalog_export");
 };
 
 #endif /* MONITORAMENTO_H_ */
