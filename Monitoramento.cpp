@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
 #include <ctime>
 #include "Monitoramento.h"
 #include "ListaEncadeada.h"
@@ -15,6 +16,7 @@
 #include "Dado.h"
 #include <windows.h>
 #include <string>
+#include <sstream>
 #define NOMEDOARQ "leituras.bin"
 
 using namespace std;
@@ -49,17 +51,21 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
 	this->lendoContinuamente = false;
 
 	//Abrindo arquivo salvo em disco
-	disco.open(NOMEDOARQ, ios::out | ios::in | ios::binary);//Tenta abrir um arquivo com os dados coletados.
+	disco.open(NOMEDOARQ, ios::out | ios::app | ios::binary);//Tenta abrir um arquivo com os dados coletados.
+	disco.close();
+	disco.open(NOMEDOARQ, ios::in | ios::binary);
 	if (!disco.is_open()) {	//Se não conseguir, lança um erro no sistema
-		throw "Erro ao carregar os dados salvos em disco";
+		cout << "Erro ao carregar os dados salvos em disco" << endl;
 	} else {
 		char* buffer = new char[sizeof(Dado)];	//Cria um buffer para um Dado
-		disco.seekg(0, ios::beg);	//Põe o ponteiro de leitura no inicio do arquivo (por definição ele já estária, mas eu gosto de me precaver)
+		//disco.seekg(0, ios::beg);	//Põe o ponteiro de leitura no inicio do arquivo (por definição ele já estária, mas eu gosto de me precaver)
 		while(!disco.eof()) {	//Enquanto não achar o final do arquivo, procede com a leitura dos dados, seguido de salvar ele em memória
 			disco.read(buffer, sizeof(Dado));
 			leituras.insereF(*any_cast<Dado*>(buffer));
 		}
 	}
+	leituras.delP();	//Por algum motivo ele inicializa já com um primeiro elemento com dados inválidos. Por isso apago o primeiro elemento.
+	disco.close();
 }
 
 /**
@@ -67,8 +73,9 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
  * Salva os ultimos dados coletados e então fecha o arquivo corretamente
  */
 Monitoramento::~Monitoramento() {
-	this->salvarEmDisco();
-	this->disco.close();
+	cout << "Destruindo Monitoramento" << endl;
+	salvarEmDisco();
+	cout << "Monitoramento destruido" << endl;
 }
 
 /**
@@ -76,18 +83,20 @@ Monitoramento::~Monitoramento() {
  */
 void Monitoramento::leitura() {
 	Dado novoDado;
-	novoDado.temperatura = placa->temperatura();
+	stringstream temp(placa->temperatura());
+
+	temp >> novoDado.temperatura;
 	novoDado.resistor = placa->isEstadoResistor();
 	novoDado.ventoinha = placa->isEstadoVentoinha();
 	novoDado.data = time(0);	//Salva a data atual em timestamp
-	double temperatura = stod(novoDado.temperatura);
+	double temperatura = novoDado.temperatura;
 
 	//Teste dos limiares de temperatura
-	if (this->haTemMin && this->temMin <= temperatura) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+	if (this->haTemMin && this->temMin <= temperatura) {
 		this->placa->resistor(true);
 		this->placa->ventoinha(false);
 	}
-	else if (this->haTemMax && this->temMax <= temperatura) {	// TODO Não sei se é possivel converter desse jeito, mas depois eu testo
+	else if (this->haTemMax && this->temMax <= temperatura) {
 		this->placa->ventoinha(true);
 		this->placa->resistor(false);
 	}
@@ -100,23 +109,31 @@ void Monitoramento::leitura() {
  * Salva em disco os ultimos dados lidos
  */
 void Monitoramento::salvarEmDisco() {
-	streampos begin, end;	//tipo de valor válido para ponteiros de arquivo
+	//streampos begin, end;	//tipo de valor válido para ponteiros de arquivo
+	Dado temp;
+	char* buffer = new char[sizeof(Dado)];
+	disco.open(NOMEDOARQ, ios::out | ios::trunc | ios::binary);
+	if (!disco.is_open()) {
+		cout << "Não foi possivel abrir o arquivo na função salvarEmDisco" << endl;
+		return;
+	}/*
+	disco.seekp(0, ios::beg);	//Coloca o ponteiro de leitura no inicio do arquivo
+	begin = disco.tellp();
+	disco.seekp(0, ios::end);	//Coloca o ponteiro de leitura no final do arquivo
+	end = disco.tellp();
 
-	disco.seekg(0, ios::beg);	//Coloca o ponteiro de leitura no inicio do arquivo
-	begin = disco.tellg();
-	disco.seekg(0, ios::end);	//Coloca o ponteiro de leitura no final do arquivo
-	end = disco.tellg();
-
-	int dadosEmArquivo = (end - begin) / sizeof(Dado);	//Calcula quantos dados estão salvos no arquivo
-
+	int dadosEmArquivo = ((int)end - (int)begin) / sizeof(Dado);	//Calcula quantos dados estão salvos no arquivo
+	cout << "dadosEmArquivo: " << dadosEmArquivo << "  leituras.getTam(): " << leituras.getTam() << endl;
 	if (dadosEmArquivo < leituras.getTam()) { //Se houver dados novos, eles serão salvos em disco. Como o ponteiro já se encontra no final do arquivo dá para escrever diretamente
-		for (int i = dadosEmArquivo; i < leituras.getTam(); i++) {//Não sei se essa lógica "pula" algum valor. Eu deveria começar em dadosEmArquivo -1 ou tesntar até <= leituras.getTam()????
-			Dado temp = leituras.pos(i);
-			disco.write(any_cast<char *>(&temp), sizeof(Dado));
+		*/for (int i = 0; i < leituras.getTam(); i++) {//Não sei se essa lógica "pula" algum valor. Eu deveria começar em dadosEmArquivo -1 ou tesntar até <= leituras.getTam()????
+			temp = leituras.pos(i);
+			buffer = any_cast<char *>(&temp);
+			disco.write(buffer, sizeof(Dado));
 		}
-	}
+	//}
 
-	disco.seekg(0, ios::beg); 	//Garante que o ponteiro de leitura esteja no inicio de arquivo caso outra função faça uma leitura posteriormente
+	//disco.seekg(0, ios::beg); 	//Garante que o ponteiro de leitura esteja no inicio de arquivo caso outra função faça uma leitura posteriormente
+	disco.close();
 }
 
 /**
@@ -163,13 +180,12 @@ void Monitoramento::lerContinuamente(bool acionar) {
 }
 
 /**
- * Fecha e reabre o arquivo com no modo Trunk, que acaba deletando de disco o arquivo antigo e assim os dados antigos.
  * Também destroi todos os elementos da lista de leituras
+ * Como o arquivo é sempre aberto em modo trunk no método salvarEmDisco, então os registros antigos serão perdidos no proximo salvamento.
+ * E a função salvarEmDisco é executada automaticamente quando o destrutor de Monitoramento for chamado.
  */
 void Monitoramento::limparRegistros(void) {
-	this->disco.close();
-	this->disco.open(NOMEDOARQ, ios::out | ios::trunc | ios::in | ios::binary);
-	while(this->leituras.delU());
+	while(leituras.delP());
 }
 
 /**
@@ -271,7 +287,7 @@ int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, tim
 
 	for (int i = 0; i < lista.getTam(); i++){
 		dado = lista.pos(i);
-		if (stod(dado.temperatura) == tem)
+		if (dado.temperatura == tem)
 			cont++;
 	}
 
@@ -279,7 +295,7 @@ int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, tim
 }
 
 /**
- * Método que retorna uma string (util para a UI) com as medidas estatisticas de temperatura de um dado periodo de tempo
+ * Método que retorna um vetor (util para a UI) com as medidas estatisticas de temperatura minima, maxima, media e mediana (nessa ordem) de um dado periodo de tempo
  *
  * Professor Andre Geraldo, não deu para entender o que o senhor quis dizer com temperatura máxima e minima no enunciado a seguir:
  * A temperatura máxima e mínima, media e mediana ocorrida em um
@@ -288,7 +304,7 @@ int Monitoramento::levantamentoDeOcorrencias(double tem, time_t dataInicial, tim
  * Não sabemos então se era para mostrar a temperatura máxima que ocorreu no periodo ou a máxima que o usuario setou no programa
  * (a mesma duvida para temperatura minima). Então fizemos só metade do enunciado, ignorando a ultima sentennça.
  */
-string Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
+double* Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
 	ListaEncadeada<Dado> lista = getLeituras(dataInicial, dataFinal);
 	Dado temp;
 	double *temperaturas = new double [lista.getTam()];
@@ -296,7 +312,7 @@ string Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
 
 	for (int i = 0; i < lista.getTam(); i++) {
 		temp = lista.pos(i);
-		temperaturas[i] = stod(temp.temperatura);
+		temperaturas[i] = temp.temperatura;
 		cont += temperaturas[i];
 	}
 
@@ -308,36 +324,36 @@ string Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
 	}
 
 	cont /= lista.getTam();
+	double* resposta = new double[4];
+	resposta[0] = temperaturas[0];
+	resposta[1] = temperaturas[lista.getTam()-1];
+	resposta[2] = cont;
+	resposta[3] = temperaturas[lista.getTam()/2];
 
-	string resposta;	//Quebrei a atribuição em três linhas por motivos de legibilidade do código
-	resposta << "Temperatura minima: " << temperaturas[0] << "C Temperatura maxima: ";
-	resposta << temperaturas[lista.getTam()] << "C Moda: " << cont << "C Mediana: ";
-	resposta << temperaturas[lista.getTam()/2] << "C";
 	return resposta;
 }
 
 void Monitoramento::datalog(int nLeituras, clock_t segundos, string nome) {
-	lerContinuamente(false);	//Desativa a leitura atual. A UI para de exibir a temperatura em tempo real
 	int inicial = leituras.getTam(), final = leituras.getTam() + nLeituras;
 
-	thread esperaLeituras([this] (int final) {
+	thread esperaLeituras([this] (int final, clock_t segundos) {
+		cout << "Final: " << final << endl;
 		while(leituras.getTam() < final) {
-			Sleep(intervaloDeLeitura);
+			this->leitura();	//Por algum motivo esse thread para o funcionamento do outro thread de leitura, me forçando a fazer a leitura aqui
+			Sleep(segundos);
+			cout << "Tamanho leituras: " << leituras.getTam() << endl;
 		}
-	}, final);
+	}, final, segundos);
 
-	//Trocando o intervalo de leitura
-	clock_t temp = this->intervaloDeLeitura;
-	this->intervaloDeLeitura = segundos;
 	esperaLeituras.join();
-	swap(temp, intervaloDeLeitura);
 
 	//Salvando em arquivo
 	fstream arquivo;
 	nome += ".log";
 	Dado lido;
-
-	arquivo.open(nome.c_str(), ios::out | ios::trunc | ios::app);
+	const char* filename = nome.c_str();
+	cout << "Nome do arquivo: " << filename << endl;
+	arquivo.open(filename, ios::out | ios::trunc);
 	for (int i = inicial; i < final; i++) {
 		lido = this->leituras.pos(i);
 		arquivo << lido.dataFormatada() << "  " << lido.temperatura << "C" << endl;

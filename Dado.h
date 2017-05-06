@@ -16,7 +16,7 @@ class Dado {
 public:
 	Dado();
 	virtual ~Dado();
-	string temperatura;
+	double temperatura;
 	bool ventoinha;
 	bool resistor;
 	time_t data;

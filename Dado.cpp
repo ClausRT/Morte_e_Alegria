@@ -13,6 +13,7 @@ Dado::Dado() {
 	this->ventoinha = false;
 	this->resistor = false;
 	this->data = 0;
+	this->temperatura = 0;
 }
 
 Dado::~Dado() {
@@ -20,5 +21,6 @@ Dado::~Dado() {
 }
 
 string Dado::dataFormatada() {
-	return ctime(&this->data);
+	string resposta = ctime(&this->data);
+	return resposta.substr(0, resposta.length()-1);
 }
