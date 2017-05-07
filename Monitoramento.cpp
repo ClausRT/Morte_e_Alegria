@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include <ctime>
 #include "Monitoramento.h"
 #include "ListaEncadeada.h"
@@ -17,6 +18,7 @@
 #include <windows.h>
 #include <string>
 #include <sstream>
+#include <windows.h>
 #define NOMEDOARQ "leituras.bin"
 
 using namespace std;
@@ -44,8 +46,8 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
 	this->placa = p;
 	this->intervaloDeLeitura = i;
 	this->leituraContinua = NULL;
-	this->temMax = NULL;
-	this->temMin = NULL;
+	this->temMax = 0;
+	this->temMin = 0;
 	this->haTemMax = false;
 	this->haTemMin = false;
 	this->lendoContinuamente = false;
@@ -70,10 +72,12 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
 
 /**
  * Destrutor
+ * Caso a classe encontre o seu fim antes do programa, garante que as ultimas leituras serão salvas em disco
  */
 Monitoramento::~Monitoramento() {
-	//delete this->leituraContinua;
-	//delete this->placa;
+	//TODO tem que chamar de algum jeito a função salvarEmDisco antes do encerramento do programa
+	this->salvarEmDisco();
+	delete this->placa;
 }
 
 /**
@@ -370,3 +374,47 @@ void Monitoramento::exportarCSV (time_t dataInicial, time_t dataFinal) {
 	}
 	arquivo.close();
 }
+/*
+void Monitoramento::plotarGrafico(time_t dataInicial, time_t dataFinal) {
+	ofstream arqGNU;
+	arqGNU.open("simple.8.gnu");
+	arqGNU << "set terminal pngcairo enhanced font \"Verdana,10\" fontscale 1.5 size 1280, 720" << endl;
+	arqGNU << "set output 'gnuplot.png'" << endl;
+	arqGNU << "set key bmargin left horizontal Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << endl;
+	arqGNU << "set samples 1280,720" << endl;
+	arqGNU << "plot 'temperatura.dat' title \"Temperatura em C\" with lines lc rgb \"red\", 'min.dat' title \"Temperatura Min.\" with lines lt 0, 'max.dat' title \"Temperatura Max.\" with lines lt 0" << endl;
+	arqGNU.close();
+
+	ListaEncadeada<Dado> lista = getLeituras(dataInicial, dataFinal);
+	Dado temp;
+	ofstream arqTemp, arqMin, arqMax;
+	arqTemp.open("temperatura.dat");
+	arqMin.open("min.dat");
+	arqMax.open("max.dat");
+	for (int i = 0; i < lista.getTam(); i++) {
+		temp = lista.pos(i);
+		arqTemp << temp.temperatura << endl;
+		arqMin << this->temMin << endl;
+		arqMax << this->temMax << endl;
+	}
+	arqTemp.close();
+	arqMin.close();
+	arqMax.close();
+
+	//Como a plotagem é um programa externo, sua execução e espera é feita em uma thread para não interromper o resto da execução do programa
+	thread gnu ([this] () {
+		string error;
+		try{
+			system("gnuplot.exe simple.8.gnu");
+			Sleep(3000);
+			system("gnuplot.png");
+			remove("temperatura.dat");
+			remove("min.dat");
+			remove("max.dat");
+			remove("simple.8.gnu");
+		} catch (error) {
+			//throw error;
+			cout << "Um erro foi achado" << endl;
+		}
+	});
+}*/
