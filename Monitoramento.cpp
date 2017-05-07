@@ -70,10 +70,12 @@ Monitoramento::Monitoramento(Placa* p, clock_t i) {
 
 /**
  * Destrutor
+ * Salva os ultimos dados coletados e então fecha o arquivo corretamente
  */
 Monitoramento::~Monitoramento() {
-	//delete this->leituraContinua;
-	//delete this->placa;
+	cout << "Destruindo Monitoramento" << endl;
+	salvarEmDisco();
+	cout << "Monitoramento destruido" << endl;
 }
 
 /**
@@ -90,17 +92,13 @@ void Monitoramento::leitura() {
 	double temperatura = novoDado.temperatura;
 
 	//Teste dos limiares de temperatura
-	if (this->haTemMin && this->temMin > temperatura) {
+	if (this->haTemMin && this->temMin <= temperatura) {
 		this->placa->resistor(true);
 		this->placa->ventoinha(false);
 	}
-	else if (this->haTemMax && this->temMax < temperatura) {
+	else if (this->haTemMax && this->temMax <= temperatura) {
 		this->placa->ventoinha(true);
 		this->placa->resistor(false);
-	}
-	else {
-		this->placa->resistor(false);
-		this->placa->ventoinha(false);
 	}
 
 	//Salva o novo dado nos registros
@@ -153,7 +151,10 @@ void Monitoramento::setIntervaloDeLeitura(clock_t segundos) {
  * Retorna falso caso não, o que indica que outro método possa usar a porta serial.
  */
 bool Monitoramento::estaLendoContinuamente(void) {
-	return this->lendoContinuamente;
+	if (!this->leituraContinua) {
+		return this->leituraContinua->joinable();
+	} else
+		return false;
 }
 
 /**
@@ -324,8 +325,8 @@ double* Monitoramento::analise (time_t dataInicial, time_t dataFinal) {
 
 	cont /= lista.getTam();
 	double* resposta = new double[4];
-	resposta[0] = temperaturas[lista.getTam()-1];
-	resposta[1] = temperaturas[0];
+	resposta[0] = temperaturas[0];
+	resposta[1] = temperaturas[lista.getTam()-1];
 	resposta[2] = cont;
 	resposta[3] = temperaturas[lista.getTam()/2];
 
@@ -336,9 +337,11 @@ void Monitoramento::datalog(int nLeituras, clock_t segundos, string nome) {
 	int inicial = leituras.getTam(), final = leituras.getTam() + nLeituras;
 
 	thread esperaLeituras([this] (int final, clock_t segundos) {
+		cout << "Final: " << final << endl;
 		while(leituras.getTam() < final) {
 			this->leitura();	//Por algum motivo esse thread para o funcionamento do outro thread de leitura, me forçando a fazer a leitura aqui
 			Sleep(segundos);
+			cout << "Tamanho leituras: " << leituras.getTam() << endl;
 		}
 	}, final, segundos);
 
@@ -349,24 +352,11 @@ void Monitoramento::datalog(int nLeituras, clock_t segundos, string nome) {
 	nome += ".log";
 	Dado lido;
 	const char* filename = nome.c_str();
-
+	cout << "Nome do arquivo: " << filename << endl;
 	arquivo.open(filename, ios::out | ios::trunc);
 	for (int i = inicial; i < final; i++) {
 		lido = this->leituras.pos(i);
 		arquivo << lido.dataFormatada() << "  " << lido.temperatura << "C" << endl;
-	}
-	arquivo.close();
-}
-
-void Monitoramento::exportarCSV (time_t dataInicial, time_t dataFinal) {
-	fstream arquivo;
-	ListaEncadeada<Dado> lista = this->getLeituras(dataInicial, dataFinal);
-	Dado lido;
-	arquivo.open("export.csv", ios::out | ios::trunc);
-	arquivo << "Data;Temperatura;Estado do Resistor;Estado da Ventoinha" << endl;
-	for (int i = 0; i < lista.getTam(); i++) {
-		lido = lista.pos(i);
-		arquivo << lido.dataFormatada() << ";" << lido.temperatura << ";" << lido.resistor << ";" << lido.ventoinha << endl;
 	}
 	arquivo.close();
 }
