@@ -47,6 +47,7 @@ public:
 	ListaEncadeada<Dado> getLeituras (time_t dataInicial = 0, time_t dataFinal = 0);
 	double* analise (time_t dataInicial = 0, time_t dataFinal = 0);
 	void datalog(int nLeituras, clock_t segundos = INTERVALO_PADRAO, string nome = "datalog_export");
+	void exportarCSV (time_t dataInicial = 0, time_t dataFinal = 0);
 };
 
 #endif /* MONITORAMENTO_H_ */

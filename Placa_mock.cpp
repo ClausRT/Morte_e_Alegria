@@ -72,4 +72,5 @@ string Placa::temperatura(void) {
 	ostringstream strs;
 	strs << ((rand() % 200) + 100.0) / 10.0;
 	return strs.str();
+	//return "25.8";
 }
