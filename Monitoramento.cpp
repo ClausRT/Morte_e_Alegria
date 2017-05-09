@@ -165,12 +165,15 @@ bool Monitoramento::estaLendoContinuamente(void) {
  * A função pode ser chamada novamente para parar a thread/leitura. Importante pois só pode haver uma leitura de temperatura por vez.
  */
 void Monitoramento::lerContinuamente(bool acionar) {
+	lendoContinuamente = acionar;
 	if (acionar) {
 		if (this->leituraContinua == NULL) {
 			this->leituraContinua = new thread ([this] () {	//Thread iniciada com uma função labda
-				while (this->lendoContinuamente) {
-					this->leitura();
-					Sleep((unsigned int)this->intervaloDeLeitura);	//Não sei se posso fazer isso
+				while (true) {
+                    if (this->lendoContinuamente) {
+                        this->leitura();
+                        Sleep((unsigned int)this->intervaloDeLeitura);	//Não sei se posso fazer isso
+                    }
 				}
 			});
 		}
@@ -179,7 +182,6 @@ void Monitoramento::lerContinuamente(bool acionar) {
 	} else {
 		//delete this->leituraContinua;	// TODO perguntar para o professor se isso é o mais correto
 	}
-	lendoContinuamente = acionar;
 }
 
 /**

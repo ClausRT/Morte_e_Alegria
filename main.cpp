@@ -297,7 +297,7 @@ int desenha(int i=-1, double t=0)
 
         if(i==7 || i==9 || i==10)
         {
-            subConsulta(); //Controle do submenu de fornecer DATA
+          // subConsulta(); //Controle do submenu de fornecer DATA
         }
 
         if(i==8)
@@ -316,8 +316,6 @@ int desenha(int i=-1, double t=0)
 
 int main()
 {
-
-
     int porta = 3, opcao = 0;
     cout << "Insira o numero da porta serial: " << endl;
     cin >> porta;
@@ -343,28 +341,28 @@ int main()
 
         while (true)
         {
-            //while(!kbhit());
-            x = wherex();   //Salva a posição anterior do cursor
-            y = wherey();
-            gotoxy(4, 24);  //Posiciona o cursor no final
-            clreol();       //Limpa a linha
             if (monitor->estaLendoContinuamente())  //Caso uma leitura esteja sendo feita
             {
+                //while(!kbhit());
+                x = wherex();   //Salva a posição anterior do cursor
+                y = wherey();
+                gotoxy(4, 24);  //Posiciona o cursor no final
+                clreol();       //Limpa a linha
                 lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
                 ultimaLeitura = lista.pos(lista.getTam() -1);    //Pega ultima leitura
                 cout << "Temperatura " << ultimaLeitura.temperatura << "C"; //Imprime a ultima leitura
+                gotoxy(x, y);   //retorna para a posição anterior
             }
-            else
-            {
-                cout << "Nenhuma leitura em andamento." << endl;    //Caso nao esteja fazendo nenhuma leitura, avisa por mensagem
-            }
-            gotoxy(x, y);   //retorna para a posição anterior
             Sleep(1000); //Espera para atualizar a temperatura
         }
     }, monitor);
 
+    time_t *datas;
+    ListaEncadeada<Dado> listaFiltrada;
+    Dado lido;
     while(opcao!=12)
     {
+        datas = NULL;
         if (monitor->estaLendoContinuamente())
         {
             lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
@@ -374,7 +372,10 @@ int main()
         switch(opcao)
         {
         case 0:
-            monitor->lerContinuamente(!monitor->estaLendoContinuamente());
+            if (monitor->estaLendoContinuamente())
+                monitor->lerContinuamente(false);
+            else
+                monitor->lerContinuamente(true);
             break;
         case 1:
             break;
@@ -389,19 +390,46 @@ int main()
         case 6:
             break;
         case 7:
+            datas = subConsulta();
+            listaFiltrada = monitor->getLeituras(datas[0], datas[1]);
+            if (listaFiltrada.getTam()>0)
+            {
+                monitor->lerContinuamente(false);
+                clrscr();
+                for (int i = 0; i < listaFiltrada.getTam(); i++)
+                {
+                    lido = listaFiltrada.pos(i);
+                    cout << lido.dataFormatada() << "\t" << lido.temperatura << "C\tResistor " << (lido.resistor? "Ligado": "Desligado") << "\tVentoinha " << (lido.ventoinha? "Ligada": "Desligada") << endl;
+                }
+                system("pause");
+                monitor->lerContinuamente(true);
+            }
             break;
         case 8:
+            monitor->salvarEmDisco();
             break;
         case 9:
+            cout << "Nao implementado.";
             break;
         case 10:
+            datas = subConsulta();
+            monitor->exportarCSV(datas[0], datas[1]);
             break;
         case 11:
+            monitor->lerContinuamente(false);
+            monitor->limparRegistros();
+            Sleep(500);
+            monitor->lerContinuamente(true);
             break;
         case 12:
+            Sleep(1000);
+            delete monitor;
+            Sleep(500);
             break;
         }
         Sleep(500);
+        if (datas)
+            delete datas;
     }
     /*int v;
     //    switchbackground(LIGHTGRAY);
