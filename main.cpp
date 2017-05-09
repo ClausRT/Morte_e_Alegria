@@ -23,16 +23,17 @@
 
 using namespace std;
 
-time_t converteParaTimestamp(unsigned int day, unsigned int month, unsigned int year, unsigned int hour, unsigned int minute, unsigned int second) {
-	struct tm tmdate = {0};
-	tmdate.tm_year = year - 1900;
-	tmdate.tm_mon = month - 1;
-	tmdate.tm_mday = day;
-	tmdate.tm_hour = hour;
-	tmdate.tm_min = minute;
-	tmdate.tm_sec = second;
-	time_t t = mktime( &tmdate );
-	return t;
+time_t converteParaTimestamp(unsigned int day, unsigned int month, unsigned int year, unsigned int hour, unsigned int minute, unsigned int second)
+{
+    struct tm tmdate = {0};
+    tmdate.tm_year = year - 1900;
+    tmdate.tm_mon = month - 1;
+    tmdate.tm_mday = day;
+    tmdate.tm_hour = hour;
+    tmdate.tm_min = minute;
+    tmdate.tm_sec = second;
+    time_t t = mktime( &tmdate );
+    return t;
 }
 
 string valData(string a)
@@ -69,7 +70,7 @@ string valData(string a)
     return a;
 }
 
-time_t subConsulta()
+time_t* subConsulta()
 {
 //Controle do submenu da escolha de datas
     string a="-1", prim="-1", segu="-1";
@@ -106,18 +107,12 @@ time_t subConsulta()
         cin >> a;
         segu = valData(a);
     }
-    //gotoxy(x+24, y+15); cout << prim << " " << segu; Sleep(1000);
-    time_t resposta[2];
+    time_t *resposta = new time_t[2];
     prim[2] = prim[6] = segu[2] = segu[6] = '\0';
     const char* dataI = prim.c_str();
     const char* dataF = segu.c_str();
-    //strcpy(dataI,prim.c_str());
-    //strcpy(dataF,segu.c_str());
-    //dataI[2] = dataI[6] = dataF[2] = dataF[6] = '\0';
-    resposta[0] = converteParaTimestamp(atoi(dataI[0]), atoi(dataI[3]), atoi(dataI[7]), 0, 0, 0);
-    resposta[1] = converteParaTimestamp(atoi(dataF[0]), atoi(dataF[3]), atoi(dataF[7]), 23, 59, 59);
-//    delete [] dataI;
-  //  delete [] dataF;
+    resposta[0] = converteParaTimestamp(atoi(&dataI[0]), atoi(&dataI[3]), atoi(&dataI[7]), 0, 0, 0);
+    resposta[1] = converteParaTimestamp(atoi(&dataF[0]), atoi(&dataF[3]), atoi(&dataF[7]), 23, 59, 59);
     return resposta;
 }
 
@@ -173,6 +168,7 @@ int desenha(int i=-1, double t=0)
         int sel=0;
         int pos[13]= {1,0,0,0,0,0,0,0,0,0,0,0,0};
         clrscr();
+        _setcursortype(_NOCURSOR);
         i++;
         gotoxy(x,   y);
         (estado[0]==1?textbackground(GREEN):textbackground(RED));
@@ -193,7 +189,7 @@ int desenha(int i=-1, double t=0)
             cout << "------------------------";
             gotoxy(x, ++y);
             (pos[0]==1?textbackground(LIGHTBLUE):textbackground(BLUE));
-            cout << "| Leia Temperatura     |";
+            cout << "| (Des)Liga Temperatura|";
             gotoxy(x, ++y);
             (pos[1]==1?textbackground(LIGHTBLUE):textbackground(BLUE));
             cout << "| Ligue Lampada        |";
@@ -259,10 +255,11 @@ int desenha(int i=-1, double t=0)
             cout << "|";
             gotoxy(x, ++y);
             cout << "------------------------";
-            gotoxy(x, ++y);
             textbackground(BLACK);
-            delline();
-            cout << "Temperatura: " <<t <<"C";
+            /*gotoxy(x, ++y);
+
+            clreol();
+            cout << "Temperatura: " <<t <<"C";*/
             sel = getch();
             if(sel==KB_DOWN)
             {
@@ -319,7 +316,7 @@ int desenha(int i=-1, double t=0)
 
 int main()
 {
-    _setcursortype(_NOCURSOR);
+
 
     int porta = 3, opcao = 0;
     cout << "Insira o numero da porta serial: " << endl;
@@ -335,54 +332,79 @@ int main()
     ListaEncadeada<Dado> lista;
     Dado ultimaLeitura;
 
-    thread atualizaTemperatura([](Monitoramento *m){
+    //Thread para atualizar a temperatura em tempo real
+    thread atualizaTemperatura([](Monitoramento *m)
+    {
         ListaEncadeada<Dado> lista;
         Dado ultimaLeitura;
         Monitoramento *monitor = m;
         int x, y;
+        Sleep(2000);    //Esperando a tela principal ser desenhada
 
-        while (true) {
-        x = werex();
-        y = werey();
-        gotoxy(3, 26);
-        delline();
-        if (monitor->estaLendoContinuamente()){
-            lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
-            ultimaLeitura = lista.pos(lista.getTam() -1);    //Pega ultima leitura
-            cout << "Temperatura " << ultimaLeitura.temperatura << "C" << endl;
-        } else {
-            cout << "Nenhuma leitura em andamento." << endl;
-        }
-        gotoxy(x, y);
-        Sleep(1000);
+        while (true)
+        {
+            //while(!kbhit());
+            x = wherex();   //Salva a posição anterior do cursor
+            y = wherey();
+            gotoxy(4, 24);  //Posiciona o cursor no final
+            clreol();       //Limpa a linha
+            if (monitor->estaLendoContinuamente())  //Caso uma leitura esteja sendo feita
+            {
+                lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
+                ultimaLeitura = lista.pos(lista.getTam() -1);    //Pega ultima leitura
+                cout << "Temperatura " << ultimaLeitura.temperatura << "C"; //Imprime a ultima leitura
+            }
+            else
+            {
+                cout << "Nenhuma leitura em andamento." << endl;    //Caso nao esteja fazendo nenhuma leitura, avisa por mensagem
+            }
+            gotoxy(x, y);   //retorna para a posição anterior
+            Sleep(1000); //Espera para atualizar a temperatura
         }
     }, monitor);
 
-    while(opcao!=12){
-            if (monitor->estaLendoContinuamente()){
-                lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
-                ultimaLeitura = lista.pos(lista.getTam() -1);    //Pega ultima leitura
-            }
-            opcao = desenha(opcao, ultimaLeitura.temperatura);
-        switch(opcao){
-            case 0: break;
-            case 1: break;
-            case 2: break;
-            case 3: break;
-            case 4: break;
-            case 5: break;
-            case 6: break;
-            case 7: break;
-            case 8: break;
-            case 9: break;
-            case 10: break;
-            case 11: break;
-            case 12: break;
+    while(opcao!=12)
+    {
+        if (monitor->estaLendoContinuamente())
+        {
+            lista = monitor->getLeituras(time(NULL) -1);   //Pega todas as leituras de um segundo atrás
+            ultimaLeitura = lista.pos(lista.getTam() -1);    //Pega ultima leitura
+        }
+        opcao = desenha(opcao, ultimaLeitura.temperatura);
+        switch(opcao)
+        {
+        case 0:
+            monitor->lerContinuamente(!monitor->estaLendoContinuamente());
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+        case 6:
+            break;
+        case 7:
+            break;
+        case 8:
+            break;
+        case 9:
+            break;
+        case 10:
+            break;
+        case 11:
+            break;
+        case 12:
+            break;
         }
         Sleep(500);
     }
     /*int v;
-//    switchbackground(LIGHTGRAY);
+    //    switchbackground(LIGHTGRAY);
     while(v!=12)
     {
 
